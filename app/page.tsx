@@ -11,6 +11,7 @@ import {
   Flashlight,
   Home,
   Medal,
+  RotateCcw,
   Send,
   Sparkles,
   X,
@@ -256,39 +257,53 @@ function CameraView({
   go: (v: View) => void;
   onGrade: (g: Grade) => void;
 }) {
-  const video = useRef<HTMLVideoElement>(null),
-    canvas = useRef<HTMLCanvasElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    let stream: MediaStream;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then((s) => {
-        stream = s;
-        if (video.current) video.current.srcObject = s;
-      })
-      .catch(() =>
-        setError(
-          "Camera unavailable. Use a supported device and allow camera access.",
-        ),
-      );
-    return () => stream?.getTracks().forEach((t) => t.stop());
-  }, []);
-  async function snap() {
-    if (!video.current || !canvas.current) return;
-    setBusy(true);
-    const c = canvas.current;
-    c.width = video.current.videoWidth;
-    c.height = video.current.videoHeight;
-    c.getContext("2d")?.drawImage(video.current, 0, 0);
-    const imageUrl = c.toDataURL("image/jpeg", 0.85);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (video.current) {
+      video.current.srcObject = null;
+    }
+  };
+
+  const startCamera = async () => {
+    setError("");
     try {
-      const blob = await new Promise<Blob | null>((r) =>
-        c.toBlob(r, "image/jpeg", 0.85),
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      if (video.current) {
+        video.current.srcObject = stream;
+      }
+    } catch {
+      setError(
+        "Camera unavailable. Use a supported device and allow camera access.",
       );
+    }
+  };
+
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  async function processGrading(blob: Blob, dataUrl: string) {
+    setBusy(true);
+    setError("");
+    try {
       const form = new FormData();
-      form.append("image", blob || new Blob(), "worksheet.jpg");
+      form.append("image", blob, "worksheet.jpg");
       form.append("lessonId", "demo-week-4");
       form.append("studentId", "lucas-p2");
       const uploadResponse = await fetch("/api/upload", {
@@ -302,7 +317,7 @@ function CameraView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           submissionId: upload.submissionId,
-          imageUrl,
+          imageUrl: dataUrl,
           wordList: ["校园", "操场", "老师", "礼堂"],
         }),
       });
@@ -315,44 +330,146 @@ function CameraView({
       setBusy(false);
     }
   }
+
+  async function snap() {
+    if (!video.current || !canvas.current) return;
+    const c = canvas.current;
+    c.width = video.current.videoWidth || 1280;
+    c.height = video.current.videoHeight || 720;
+    c.getContext("2d")?.drawImage(video.current, 0, 0);
+    const imageUrl = c.toDataURL("image/jpeg", 0.85);
+
+    // Stop camera immediately and switch view to the captured photo
+    stopCamera();
+    setCapturedImage(imageUrl);
+
+    const blob = await new Promise<Blob | null>((r) =>
+      c.toBlob(r, "image/jpeg", 0.85),
+    );
+    await processGrading(blob || new Blob(), imageUrl);
+  }
+
+  function retake() {
+    setCapturedImage(null);
+    setError("");
+    setBusy(false);
+    startCamera();
+  }
+
+  async function retry() {
+    if (!capturedImage) return;
+    try {
+      const res = await fetch(capturedImage);
+      const blob = await res.blob();
+      await processGrading(blob, capturedImage);
+    } catch {
+      setError("Failed to process captured image.");
+    }
+  }
+
   return (
     <main className="relative min-h-screen bg-slate-950 text-white">
       <video
         ref={video}
         autoPlay
         playsInline
-        className="absolute h-full w-full object-cover opacity-70"
+        className={`absolute h-full w-full object-cover ${capturedImage ? "hidden" : "opacity-70"}`}
       />
+      {capturedImage && (
+        <img
+          src={capturedImage}
+          alt="Captured worksheet"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       <div className="relative z-10 flex min-h-screen flex-col p-5">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <button
-            onClick={() => go("home")}
-            className="rounded-full bg-black/30 p-3"
+            onClick={() => {
+              stopCamera();
+              go("home");
+            }}
+            className="rounded-full bg-black/40 backdrop-blur-md p-3 text-white hover:bg-black/60 transition"
           >
-            <X />
+            <X className="h-5 w-5" />
           </button>
-          <button className="rounded-full bg-black/30 p-3">
-            <Flashlight />
-          </button>
+          {capturedImage ? (
+            <span className="rounded-full bg-black/50 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white/90 border border-white/10">
+              Captured
+            </span>
+          ) : (
+            <button className="rounded-full bg-black/40 backdrop-blur-md p-3 text-white">
+              <Flashlight className="h-5 w-5" />
+            </button>
+          )}
         </div>
-        <div className="m-auto w-[82%] aspect-[3/4] rounded-xl border-2 border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]">
-          <div className="flex h-full items-end justify-center pb-5 text-center text-sm font-medium">
-            Keep page flat and inside the brackets
+
+        {!capturedImage && (
+          <div className="m-auto w-[82%] aspect-[3/4] rounded-xl border-2 border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]">
+            <div className="flex h-full items-end justify-center pb-5 text-center text-sm font-medium">
+              Keep page flat and inside the brackets
+            </div>
           </div>
-        </div>
-        {error && (
-          <p className="rounded-lg bg-red-500/80 p-3 text-sm">{error}</p>
         )}
-        <button
-          disabled={busy}
-          onClick={snap}
-          className="mx-auto mt-7 grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-transparent"
-        >
-          <span className="h-14 w-14 rounded-full bg-white" />
-        </button>
-        <p className="mt-3 text-center text-sm">
-          {busy ? "Uploading & grading…" : "Tap to capture"}
-        </p>
+
+        {capturedImage && busy && (
+          <div className="m-auto flex flex-col items-center justify-center rounded-2xl bg-black/70 backdrop-blur-md px-7 py-6 text-center border border-white/15 shadow-2xl max-w-[280px]">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white mb-3" />
+            <p className="font-semibold text-base">Uploading & grading…</p>
+            <p className="text-xs text-white/70 mt-1">Analyzing handwriting with Gemini</p>
+          </div>
+        )}
+
+        {capturedImage && !busy && error && (
+          <div className="m-auto w-[90%] max-w-sm rounded-2xl bg-black/80 backdrop-blur-md p-5 text-center border border-red-500/40 shadow-2xl">
+            <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-red-500/20 text-red-400">
+              <X className="h-5 w-5" />
+            </div>
+            <p className="font-semibold text-sm text-red-200">{error}</p>
+            <div className="mt-5 flex justify-center gap-3">
+              <button
+                onClick={retake}
+                className="flex items-center gap-1.5 rounded-xl bg-white/20 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/30 transition"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Retake
+              </button>
+              <button
+                onClick={retry}
+                className="rounded-xl bg-[#4a6cf7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#3b5de7] transition"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!capturedImage && (
+          <>
+            {error && (
+              <p className="rounded-lg bg-red-500/80 p-3 text-sm text-center mb-2">{error}</p>
+            )}
+            <button
+              disabled={busy}
+              onClick={snap}
+              className="mx-auto mt-7 grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-transparent transition active:scale-95 disabled:opacity-50"
+            >
+              <span className="h-14 w-14 rounded-full bg-white" />
+            </button>
+            <p className="mt-3 text-center text-sm">Tap to capture</p>
+          </>
+        )}
+
+        {capturedImage && busy && (
+          <button
+            onClick={retake}
+            className="mx-auto mt-7 flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-md border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-black/70 transition"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Cancel & Retake
+          </button>
+        )}
+
         <canvas ref={canvas} className="hidden" />
       </div>
     </main>
