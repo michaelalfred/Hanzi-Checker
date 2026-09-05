@@ -1,13 +1,485 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import { Bell, BookOpen, Camera, Check, ChevronDown, ChevronLeft, CreditCard, Flashlight, Home, Medal, Send, Sparkles, X } from 'lucide-react';
-import type { Grade } from '@/lib/demo';
-type View = 'home'|'syllabus'|'camera'|'results';
-const lessons=[{week:4,title:'第十课 – 我们的校园',status:'Pending Practice',tone:'bg-amber-100 text-amber-700',words:[['校园','xiàoyuán'],['操场','cāochǎng'],['老师','lǎoshī'],['礼堂','lǐtáng']]},{week:3,title:'第九课 – 我爱我的家',status:'Completed (80%)',tone:'bg-emerald-100 text-emerald-700',words:[['家','jiā'],['妈妈','māma'],['爸爸','bàba']]},{week:2,title:'第八课 – 快乐的周末',status:'Needs Revision',tone:'bg-rose-100 text-rose-700',words:[['周末','zhōumò'],['公园','gōngyuán'],['快乐','kuàilè']]}];
-const matrix=[['校园',[1,1,0,0]],['操场',[1,1,1,1]],['老师',[0,1,1,1]],['礼堂',[1,0,1,0]]] as const;
-function Nav({view,go}:{view:View;go:(v:View)=>void}){return <nav className="fixed bottom-0 left-0 right-0 z-30 mx-auto flex max-w-[440px] justify-around border-t border-stone-200 bg-white px-3 py-3 text-[10px] text-slate-500"><button onClick={()=>go('home')} className={view==='home'?'text-[#4a6cf7]':''}><Home className="mx-auto mb-1 h-5"/>Dashboard</button><button onClick={()=>go('syllabus')} className={view==='syllabus'?'text-[#4a6cf7]':''}><BookOpen className="mx-auto mb-1 h-5"/>Syllabus</button><button onClick={()=>go('results')}><Medal className="mx-auto mb-1 h-5"/>History</button><button><Sparkles className="mx-auto mb-1 h-5"/>Premium</button></nav>}
-function Dashboard({go}:{go:(v:View)=>void}){return <main className="p-5 pb-24"><header className="flex items-center justify-between"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-full bg-[#ffe4cf] text-xl">L</div><div><p className="font-bold">Hi, Lucas!</p><p className="text-xs text-slate-500">Primary 2 · Chinese</p></div></div><Bell className="h-5"/></header><section className="mt-7 rounded-3xl bg-[#4a6cf7] p-5 text-white"><div className="flex justify-between"><div><p className="text-sm opacity-80">Prepaid credits</p><p className="mt-2 text-2xl font-bold">12 <span className="text-sm font-normal opacity-75">of 20 Remaining</span></p></div><CreditCard className="opacity-70"/></div><button className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#4a6cf7]">Top Up</button></section><section className="mt-5 grid grid-cols-2 gap-3"><div className="card p-4"><p className="text-xs text-slate-500">Mastery Rate</p><p className="mt-2 text-2xl font-bold">82.4<span className="text-sm">%</span></p><div className="mt-3 h-1.5 rounded bg-slate-100"><div className="h-full w-[82%] rounded bg-emerald-400"/></div></div><div className="card p-4"><p className="text-xs text-slate-500">Practiced</p><p className="mt-2 text-2xl font-bold">48</p><p className="mt-3 text-xs text-slate-400">Characters</p></div></section><section className="mt-6"><h2 className="font-bold">This week</h2><div className="mt-3 flex justify-between">{['M','T','W','T','F','S'].map((d,i)=><div key={i} className="text-center"><span className={'grid h-9 w-9 place-items-center rounded-full text-xs '+(i===4?'bg-[#4a6cf7] text-white':'text-slate-500')}>{i+9}</span><small className="mt-1 block text-[10px] text-slate-400">{d}</small></div>)}</div></section><section className="card mt-7 border-l-4 border-l-[#ff9a50] p-4"><p className="text-xs font-semibold text-[#e4782d]">UPCOMING TING XIE</p><h2 className="mt-2 font-bold">Week 4 Syllabus Test</h2><p className="mt-1 text-sm text-slate-500">《第十课 – 我们的校园》 · Friday</p></section><button onClick={()=>go('camera')} className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#4a6cf7] py-4 font-bold text-white"><Camera className="h-5"/>Scan & Grade Worksheet</button></main>}
-function Syllabus({go}:{go:(v:View)=>void}){const[open,setOpen]=useState(0);return <main className="p-5 pb-24"><button onClick={()=>go('home')}><ChevronLeft/></button><h1 className="mt-4 text-2xl font-bold">Syllabus</h1><div className="mt-5 flex gap-1 rounded-xl bg-slate-100 p-1">{['P1','P2','P3','P4','P5','P6'].map(x=><button key={x} className={'flex-1 rounded-lg py-2 text-xs '+(x==='P2'?'bg-white font-bold shadow':'text-slate-500')}>{x}</button>)}</div><div className="mt-6"><h2 className="font-bold">MOE Primary 2 Syllabus</h2><p className="text-sm text-slate-500">24 Lessons Total</p></div><section className="mt-4 space-y-3">{lessons.map((l,i)=><article className="card overflow-hidden" key={l.week}><button onClick={()=>setOpen(open===i?-1:i)} className="flex w-full items-center justify-between p-4 text-left"><div><p className="text-xs text-slate-400">WEEK {l.week}</p><p className="mt-1 font-semibold">{l.title}</p></div><ChevronDown className={'h-5 transition '+(open===i?'rotate-180':'')}/></button><div className="px-4 pb-4"><span className={'rounded-full px-2 py-1 text-[10px] font-bold '+l.tone}>{l.status}</span></div>{open===i&&<div className="border-t bg-[#fcfbf8] p-4"><div className="flex flex-wrap gap-2">{l.words.map(([w,p])=><span key={w} className="rounded-lg border bg-white px-3 py-1 text-sm font-medium">{w}<small className="ml-1 text-[10px] font-normal text-slate-400">{p}</small></span>)}</div><button className="mt-4 text-xs font-bold text-[#4a6cf7]">Print A4 Worksheet (PDF)</button></div>}</article>)}</section></main>}
-function CameraView({go,onGrade}:{go:(v:View)=>void;onGrade:(g:Grade)=>void}){const video=useRef<HTMLVideoElement>(null),canvas=useRef<HTMLCanvasElement>(null);const[busy,setBusy]=useState(false);const[error,setError]=useState('');useEffect(()=>{let stream:MediaStream; navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{stream=s;if(video.current)video.current.srcObject=s;}).catch(()=>setError('Camera unavailable. Use a supported device and allow camera access.'));return()=>stream?.getTracks().forEach(t=>t.stop())},[]);async function snap(){if(!video.current||!canvas.current)return;setBusy(true);const c=canvas.current;c.width=video.current.videoWidth;c.height=video.current.videoHeight;c.getContext('2d')?.drawImage(video.current,0,0);const imageUrl=c.toDataURL('image/jpeg',.85);try{const blob=await new Promise<Blob|null>(r=>c.toBlob(r,'image/jpeg',.85));const form=new FormData();form.append('image',blob||new Blob(), 'worksheet.jpg');form.append('lessonId','demo-week-4');form.append('studentId','lucas-p2');const upload=await fetch('/api/upload',{method:'POST',body:form}).then(r=>r.json());const grade=await fetch('/api/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submissionId:upload.submissionId,imageUrl,wordList:['校园','操场','老师','礼堂']})}).then(r=>r.json());onGrade(grade);go('results')}catch{setError('Something went wrong. Please try again.');setBusy(false)}}return <main className="relative min-h-screen bg-slate-950 text-white"><video ref={video} autoPlay playsInline className="absolute h-full w-full object-cover opacity-70"/><div className="relative z-10 flex min-h-screen flex-col p-5"><div className="flex justify-between"><button onClick={()=>go('home')} className="rounded-full bg-black/30 p-3"><X/></button><button className="rounded-full bg-black/30 p-3"><Flashlight/></button></div><div className="m-auto w-[82%] aspect-[3/4] rounded-xl border-2 border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]"><div className="flex h-full items-end justify-center pb-5 text-center text-sm font-medium">Keep page flat and inside the brackets</div></div>{error&&<p className="rounded-lg bg-red-500/80 p-3 text-sm">{error}</p>}<button disabled={busy} onClick={snap} className="mx-auto mt-7 grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-transparent"><span className="h-14 w-14 rounded-full bg-white"/></button><p className="mt-3 text-center text-sm">{busy?'Uploading & grading…':'Tap to capture'}</p><canvas ref={canvas} className="hidden"/></div></main>}
-function Results({go,grade}:{go:(v:View)=>void;grade:Grade|null}){const g=grade||{totalScore:8,totalPossible:10,imageUrl:'',createdAt:new Date().toISOString(),results:[{character:'校园',correct:false,expected_text:'校园'},{character:'操场',correct:true,expected_text:'操场'},{character:'老师',correct:true,expected_text:'老师'},{character:'礼堂',correct:false,expected_text:'礼堂'}]};const pct=Math.round(g.totalScore/g.totalPossible*100);return <main className="p-5 pb-28"><button onClick={()=>go('home')}><ChevronLeft/></button><header className="mt-3 flex items-start justify-between"><div><h1 className="text-2xl font-bold">Test Feedback</h1><p className="mt-1 text-sm text-slate-500">Week 4 Syllabus Test</p></div><span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">Needs Revision</span></header><section className="card mt-6 p-5 text-center"><div className="mx-auto grid h-28 w-28 place-items-center rounded-full border-[10px] border-[#ffb16c]"><b className="text-3xl">{pct}%</b></div><p className="mt-4 font-bold">Score: {g.totalScore}/{g.totalPossible}</p><p className="mt-1 text-xs text-slate-500">Graded just now · {g.results.filter(r=>!r.correct).length} characters missed</p></section>{g.imageUrl&&<section className="card mt-5 overflow-hidden"><div className="relative grid-bg min-h-48 bg-stone-50"><img src={g.imageUrl} alt="Captured worksheet" className="h-60 w-full object-contain"/>{g.results.filter(r=>!r.correct).map((r,i)=><div key={r.character} className="absolute left-[12%] text-sm font-bold text-red-600" style={{top:`${20+i*38}%`}}>✗ expected: {r.expected_text}</div>)}</div><p className="p-3 text-xs font-semibold text-red-500">Red-pen corrections</p></section>}<section className="mt-6"><h2 className="font-bold">Results over time</h2><div className="card mt-3 overflow-hidden"><table className="w-full text-center text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3 text-left">Word</th>{['8 Oct','10 Oct','12 Oct','14 Oct'].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{matrix.map(([word,v])=><tr key={word} className="border-t"><td className="p-3 text-left font-medium">{word}</td>{v.map((x,i)=><td key={i} className={x?'text-emerald-500':'text-red-500'}>{x?<Check className="mx-auto h-4"/>:'✕'}</td>)}</tr>)}</tbody></table></div></section><div className="mt-6 grid grid-cols-2 gap-3"><button className="rounded-xl border border-[#4a6cf7] py-3 text-sm font-bold text-[#4a6cf7]"><Send className="mr-1 inline h-4"/>Share Report</button><button onClick={()=>go('camera')} className="rounded-xl bg-[#4a6cf7] py-3 text-sm font-bold text-white">Retest Missed</button></div></main>}
-export default function App(){const[view,setView]=useState<View>('home');const[grade,setGrade]=useState<Grade|null>(null);useEffect(()=>{if('serviceWorker' in navigator){if(process.env.NODE_ENV==='production'){navigator.serviceWorker.register('/sw.js').catch(()=>undefined);}else{navigator.serviceWorker.getRegistrations().then(rs=>{rs.forEach(r=>r.unregister())});if('caches' in window){caches.keys().then(ks=>{ks.forEach(k=>caches.delete(k))})}}}},[]);return <div className="phone">{view==='home'&&<Dashboard go={setView}/>} {view==='syllabus'&&<Syllabus go={setView}/>} {view==='camera'&&<CameraView go={setView} onGrade={setGrade}/>} {view==='results'&&<Results go={setView} grade={grade}/>} {view!=='camera'&&<Nav view={view} go={setView}/>}</div>}
+"use client";
+import { useEffect, useRef, useState } from "react";
+import {
+  Bell,
+  BookOpen,
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  CreditCard,
+  Flashlight,
+  Home,
+  Medal,
+  Send,
+  Sparkles,
+  X,
+} from "lucide-react";
+import type { Grade } from "@/lib/demo";
+type View = "home" | "syllabus" | "camera" | "results";
+const lessons = [
+  {
+    week: 4,
+    title: "第十课 – 我们的校园",
+    status: "Pending Practice",
+    tone: "bg-amber-100 text-amber-700",
+    words: [
+      ["校园", "xiàoyuán"],
+      ["操场", "cāochǎng"],
+      ["老师", "lǎoshī"],
+      ["礼堂", "lǐtáng"],
+    ],
+  },
+  {
+    week: 3,
+    title: "第九课 – 我爱我的家",
+    status: "Completed (80%)",
+    tone: "bg-emerald-100 text-emerald-700",
+    words: [
+      ["家", "jiā"],
+      ["妈妈", "māma"],
+      ["爸爸", "bàba"],
+    ],
+  },
+  {
+    week: 2,
+    title: "第八课 – 快乐的周末",
+    status: "Needs Revision",
+    tone: "bg-rose-100 text-rose-700",
+    words: [
+      ["周末", "zhōumò"],
+      ["公园", "gōngyuán"],
+      ["快乐", "kuàilè"],
+    ],
+  },
+];
+const matrix = [
+  ["校园", [1, 1, 0, 0]],
+  ["操场", [1, 1, 1, 1]],
+  ["老师", [0, 1, 1, 1]],
+  ["礼堂", [1, 0, 1, 0]],
+] as const;
+function Nav({ view, go }: { view: View; go: (v: View) => void }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-30 mx-auto flex max-w-[440px] justify-around border-t border-stone-200 bg-white px-3 py-3 text-[10px] text-slate-500">
+      <button
+        onClick={() => go("home")}
+        className={view === "home" ? "text-[#4a6cf7]" : ""}
+      >
+        <Home className="mx-auto mb-1 h-5" />
+        Dashboard
+      </button>
+      <button
+        onClick={() => go("syllabus")}
+        className={view === "syllabus" ? "text-[#4a6cf7]" : ""}
+      >
+        <BookOpen className="mx-auto mb-1 h-5" />
+        Syllabus
+      </button>
+      <button onClick={() => go("results")}>
+        <Medal className="mx-auto mb-1 h-5" />
+        History
+      </button>
+      <button>
+        <Sparkles className="mx-auto mb-1 h-5" />
+        Premium
+      </button>
+    </nav>
+  );
+}
+function Dashboard({ go }: { go: (v: View) => void }) {
+  return (
+    <main className="p-5 pb-24">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-[#ffe4cf] text-xl">
+            L
+          </div>
+          <div>
+            <p className="font-bold">Hi, Lucas!</p>
+            <p className="text-xs text-slate-500">Primary 2 · Chinese</p>
+          </div>
+        </div>
+        <Bell className="h-5" />
+      </header>
+      <section className="mt-7 rounded-3xl bg-[#4a6cf7] p-5 text-white">
+        <div className="flex justify-between">
+          <div>
+            <p className="text-sm opacity-80">Prepaid credits</p>
+            <p className="mt-2 text-2xl font-bold">
+              12{" "}
+              <span className="text-sm font-normal opacity-75">
+                of 20 Remaining
+              </span>
+            </p>
+          </div>
+          <CreditCard className="opacity-70" />
+        </div>
+        <button className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#4a6cf7]">
+          Top Up
+        </button>
+      </section>
+      <section className="mt-5 grid grid-cols-2 gap-3">
+        <div className="card p-4">
+          <p className="text-xs text-slate-500">Mastery Rate</p>
+          <p className="mt-2 text-2xl font-bold">
+            82.4<span className="text-sm">%</span>
+          </p>
+          <div className="mt-3 h-1.5 rounded bg-slate-100">
+            <div className="h-full w-[82%] rounded bg-emerald-400" />
+          </div>
+        </div>
+        <div className="card p-4">
+          <p className="text-xs text-slate-500">Practiced</p>
+          <p className="mt-2 text-2xl font-bold">48</p>
+          <p className="mt-3 text-xs text-slate-400">Characters</p>
+        </div>
+      </section>
+      <section className="mt-6">
+        <h2 className="font-bold">This week</h2>
+        <div className="mt-3 flex justify-between">
+          {["M", "T", "W", "T", "F", "S"].map((d, i) => (
+            <div key={i} className="text-center">
+              <span
+                className={
+                  "grid h-9 w-9 place-items-center rounded-full text-xs " +
+                  (i === 4 ? "bg-[#4a6cf7] text-white" : "text-slate-500")
+                }
+              >
+                {i + 9}
+              </span>
+              <small className="mt-1 block text-[10px] text-slate-400">
+                {d}
+              </small>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="card mt-7 border-l-4 border-l-[#ff9a50] p-4">
+        <p className="text-xs font-semibold text-[#e4782d]">
+          UPCOMING TING XIE
+        </p>
+        <h2 className="mt-2 font-bold">Week 4 Syllabus Test</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          《第十课 – 我们的校园》 · Friday
+        </p>
+      </section>
+      <button
+        onClick={() => go("camera")}
+        className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#4a6cf7] py-4 font-bold text-white"
+      >
+        <Camera className="h-5" />
+        Scan & Grade Worksheet
+      </button>
+    </main>
+  );
+}
+function Syllabus({ go }: { go: (v: View) => void }) {
+  const [open, setOpen] = useState(0);
+  return (
+    <main className="p-5 pb-24">
+      <button onClick={() => go("home")}>
+        <ChevronLeft />
+      </button>
+      <h1 className="mt-4 text-2xl font-bold">Syllabus</h1>
+      <div className="mt-5 flex gap-1 rounded-xl bg-slate-100 p-1">
+        {["P1", "P2", "P3", "P4", "P5", "P6"].map((x) => (
+          <button
+            key={x}
+            className={
+              "flex-1 rounded-lg py-2 text-xs " +
+              (x === "P2" ? "bg-white font-bold shadow" : "text-slate-500")
+            }
+          >
+            {x}
+          </button>
+        ))}
+      </div>
+      <div className="mt-6">
+        <h2 className="font-bold">MOE Primary 2 Syllabus</h2>
+        <p className="text-sm text-slate-500">24 Lessons Total</p>
+      </div>
+      <section className="mt-4 space-y-3">
+        {lessons.map((l, i) => (
+          <article className="card overflow-hidden" key={l.week}>
+            <button
+              onClick={() => setOpen(open === i ? -1 : i)}
+              className="flex w-full items-center justify-between p-4 text-left"
+            >
+              <div>
+                <p className="text-xs text-slate-400">WEEK {l.week}</p>
+                <p className="mt-1 font-semibold">{l.title}</p>
+              </div>
+              <ChevronDown
+                className={"h-5 transition " + (open === i ? "rotate-180" : "")}
+              />
+            </button>
+            <div className="px-4 pb-4">
+              <span
+                className={
+                  "rounded-full px-2 py-1 text-[10px] font-bold " + l.tone
+                }
+              >
+                {l.status}
+              </span>
+            </div>
+            {open === i && (
+              <div className="border-t bg-[#fcfbf8] p-4">
+                <div className="flex flex-wrap gap-2">
+                  {l.words.map(([w, p]) => (
+                    <span
+                      key={w}
+                      className="rounded-lg border bg-white px-3 py-1 text-sm font-medium"
+                    >
+                      {w}
+                      <small className="ml-1 text-[10px] font-normal text-slate-400">
+                        {p}
+                      </small>
+                    </span>
+                  ))}
+                </div>
+                <button className="mt-4 text-xs font-bold text-[#4a6cf7]">
+                  Print A4 Worksheet (PDF)
+                </button>
+              </div>
+            )}
+          </article>
+        ))}
+      </section>
+    </main>
+  );
+}
+function CameraView({
+  go,
+  onGrade,
+}: {
+  go: (v: View) => void;
+  onGrade: (g: Grade) => void;
+}) {
+  const video = useRef<HTMLVideoElement>(null),
+    canvas = useRef<HTMLCanvasElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let stream: MediaStream;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((s) => {
+        stream = s;
+        if (video.current) video.current.srcObject = s;
+      })
+      .catch(() =>
+        setError(
+          "Camera unavailable. Use a supported device and allow camera access.",
+        ),
+      );
+    return () => stream?.getTracks().forEach((t) => t.stop());
+  }, []);
+  async function snap() {
+    if (!video.current || !canvas.current) return;
+    setBusy(true);
+    const c = canvas.current;
+    c.width = video.current.videoWidth;
+    c.height = video.current.videoHeight;
+    c.getContext("2d")?.drawImage(video.current, 0, 0);
+    const imageUrl = c.toDataURL("image/jpeg", 0.85);
+    try {
+      const blob = await new Promise<Blob | null>((r) =>
+        c.toBlob(r, "image/jpeg", 0.85),
+      );
+      const form = new FormData();
+      form.append("image", blob || new Blob(), "worksheet.jpg");
+      form.append("lessonId", "demo-week-4");
+      form.append("studentId", "lucas-p2");
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+      });
+      const upload = await uploadResponse.json();
+      if (!uploadResponse.ok) throw new Error(upload.error || "Upload failed.");
+      const gradeResponse = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId: upload.submissionId,
+          imageUrl,
+          wordList: ["校园", "操场", "老师", "礼堂"],
+        }),
+      });
+      const grade = await gradeResponse.json();
+      if (!gradeResponse.ok) throw new Error(grade.error || "Gemini grading failed.");
+      onGrade(grade);
+      go("results");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Something went wrong. Please try again.");
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="relative min-h-screen bg-slate-950 text-white">
+      <video
+        ref={video}
+        autoPlay
+        playsInline
+        className="absolute h-full w-full object-cover opacity-70"
+      />
+      <div className="relative z-10 flex min-h-screen flex-col p-5">
+        <div className="flex justify-between">
+          <button
+            onClick={() => go("home")}
+            className="rounded-full bg-black/30 p-3"
+          >
+            <X />
+          </button>
+          <button className="rounded-full bg-black/30 p-3">
+            <Flashlight />
+          </button>
+        </div>
+        <div className="m-auto w-[82%] aspect-[3/4] rounded-xl border-2 border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]">
+          <div className="flex h-full items-end justify-center pb-5 text-center text-sm font-medium">
+            Keep page flat and inside the brackets
+          </div>
+        </div>
+        {error && (
+          <p className="rounded-lg bg-red-500/80 p-3 text-sm">{error}</p>
+        )}
+        <button
+          disabled={busy}
+          onClick={snap}
+          className="mx-auto mt-7 grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-transparent"
+        >
+          <span className="h-14 w-14 rounded-full bg-white" />
+        </button>
+        <p className="mt-3 text-center text-sm">
+          {busy ? "Uploading & grading…" : "Tap to capture"}
+        </p>
+        <canvas ref={canvas} className="hidden" />
+      </div>
+    </main>
+  );
+}
+function Results({
+  go,
+  grade,
+}: {
+  go: (v: View) => void;
+  grade: Grade | null;
+}) {
+  if (!grade) {
+    return <main className="p-5 pb-28"><button onClick={() => go("home")}><ChevronLeft /></button><section className="card mt-8 p-7 text-center"><h1 className="text-xl font-bold">No graded worksheet yet</h1><p className="mt-2 text-sm text-slate-500">Scan a worksheet to see its real Gemini feedback here.</p><button onClick={() => go("camera")} className="mt-6 rounded-xl bg-[#4a6cf7] px-5 py-3 text-sm font-bold text-white">Scan a worksheet</button></section></main>;
+  }
+  const g = grade;
+  const pct = Math.round((g.totalScore / g.totalPossible) * 100);
+  return (
+    <main className="p-5 pb-28">
+      <button onClick={() => go("home")}>
+        <ChevronLeft />
+      </button>
+      <header className="mt-3 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Test Feedback</h1>
+          <p className="mt-1 text-sm text-slate-500">Week 4 Syllabus Test</p>
+        </div>
+        <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600">
+          Needs Revision
+        </span>
+      </header>
+      <section className="card mt-6 p-5 text-center">
+        <div className="mx-auto grid h-28 w-28 place-items-center rounded-full border-[10px] border-[#ffb16c]">
+          <b className="text-3xl">{pct}%</b>
+        </div>
+        <p className="mt-4 font-bold">
+          Score: {g.totalScore}/{g.totalPossible}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Graded just now · {g.results.filter((r) => !r.correct).length}{" "}
+          characters missed
+        </p>
+      </section>
+      {g.imageUrl && (
+        <section className="card mt-5 overflow-hidden">
+          <div className="relative grid-bg min-h-48 bg-stone-50">
+            <img
+              src={g.imageUrl}
+              alt="Captured worksheet"
+              className="h-60 w-full object-contain"
+            />
+            {g.results
+              .filter((r) => !r.correct)
+              .map((r, i) => (
+                <div
+                  key={r.character}
+                  className="absolute left-[12%] text-sm font-bold text-red-600"
+                  style={{ top: `${20 + i * 38}%` }}
+                >
+                  ✗ expected: {r.expected_text}
+                </div>
+              ))}
+          </div>
+          <p className="p-3 text-xs font-semibold text-red-500">
+            Red-pen corrections
+          </p>
+        </section>
+      )}
+      <section className="mt-6">
+        <h2 className="font-bold">Results over time</h2>
+        <div className="card mt-3 overflow-hidden">
+          <table className="w-full text-center text-xs">
+            <thead className="bg-slate-50 text-slate-500">
+              <tr>
+                <th className="p-3 text-left">Word</th>
+                {["8 Oct", "10 Oct", "12 Oct", "14 Oct"].map((x) => (
+                  <th key={x}>{x}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.map(([word, v]) => (
+                <tr key={word} className="border-t">
+                  <td className="p-3 text-left font-medium">{word}</td>
+                  {v.map((x, i) => (
+                    <td
+                      key={i}
+                      className={x ? "text-emerald-500" : "text-red-500"}
+                    >
+                      {x ? <Check className="mx-auto h-4" /> : "✕"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <button className="rounded-xl border border-[#4a6cf7] py-3 text-sm font-bold text-[#4a6cf7]">
+          <Send className="mr-1 inline h-4" />
+          Share Report
+        </button>
+        <button
+          onClick={() => go("camera")}
+          className="rounded-xl bg-[#4a6cf7] py-3 text-sm font-bold text-white"
+        >
+          Retest Missed
+        </button>
+      </div>
+    </main>
+  );
+}
+export default function App() {
+  const [view, setView] = useState<View>("home");
+  const [grade, setGrade] = useState<Grade | null>(null);
+  useEffect(() => {
+    if ("serviceWorker" in navigator)
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  }, []);
+  return (
+    <div className="phone">
+      {view === "home" && <Dashboard go={setView} />}{" "}
+      {view === "syllabus" && <Syllabus go={setView} />}{" "}
+      {view === "camera" && <CameraView go={setView} onGrade={setGrade} />}{" "}
+      {view === "results" && <Results go={setView} grade={grade} />}{" "}
+      {view !== "camera" && <Nav view={view} go={setView} />}
+    </div>
+  );
+}
