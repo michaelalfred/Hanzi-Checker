@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronLeft,
   CreditCard,
+  FileText,
   Flashlight,
   Home,
   Medal,
@@ -201,51 +202,77 @@ function Syllabus({ go }: { go: (v: View) => void }) {
         <p className="text-sm text-slate-500">24 Lessons Total</p>
       </div>
       <section className="mt-4 space-y-3">
-        {lessons.map((l, i) => (
-          <article className="card overflow-hidden" key={l.week}>
-            <button
-              onClick={() => setOpen(open === i ? -1 : i)}
-              className="flex w-full items-center justify-between p-4 text-left"
+        {lessons.map((l, i) => {
+          const isOpen = open === i;
+          return (
+            <article
+              className={`card overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isOpen
+                  ? "border-[#4a6cf7]/30 shadow-md ring-1 ring-[#4a6cf7]/20"
+                  : "hover:border-stone-300"
+              }`}
+              key={l.week}
             >
-              <div>
-                <p className="text-xs text-slate-400">WEEK {l.week}</p>
-                <p className="mt-1 font-semibold">{l.title}</p>
-              </div>
-              <ChevronDown
-                className={"h-5 transition " + (open === i ? "rotate-180" : "")}
-              />
-            </button>
-            <div className="px-4 pb-4">
-              <span
-                className={
-                  "rounded-full px-2 py-1 text-[10px] font-bold " + l.tone
-                }
+              <button
+                onClick={() => setOpen(isOpen ? -1 : i)}
+                className="flex w-full items-center justify-between p-4 text-left transition-colors duration-200 hover:bg-stone-50/70 active:bg-stone-100/50"
+                aria-expanded={isOpen}
               >
-                {l.status}
-              </span>
-            </div>
-            {open === i && (
-              <div className="border-t bg-[#fcfbf8] p-4">
-                <div className="flex flex-wrap gap-2">
-                  {l.words.map(([w, p]) => (
-                    <span
-                      key={w}
-                      className="rounded-lg border bg-white px-3 py-1 text-sm font-medium"
-                    >
-                      {w}
-                      <small className="ml-1 text-[10px] font-normal text-slate-400">
-                        {p}
-                      </small>
-                    </span>
-                  ))}
+                <div>
+                  <p className="text-xs font-semibold tracking-wider text-slate-400">
+                    WEEK {l.week}
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-800">{l.title}</p>
                 </div>
-                <button className="mt-4 text-xs font-bold text-[#4a6cf7]">
-                  Print A4 Worksheet (PDF)
-                </button>
+                <div
+                  className={`grid h-8 w-8 place-items-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    isOpen
+                      ? "bg-blue-50 text-[#4a6cf7] rotate-180 shadow-sm"
+                      : "bg-stone-100/80 text-slate-400 hover:bg-stone-200/80"
+                  }`}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </div>
+              </button>
+              <div className="px-4 pb-4">
+                <span
+                  className={
+                    "inline-block rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide transition-colors duration-200 " +
+                    l.tone
+                  }
+                >
+                  {l.status}
+                </span>
               </div>
-            )}
-          </article>
-        ))}
+              <div
+                className={`accordion-wrapper ${isOpen ? "is-open" : ""}`}
+                aria-hidden={!isOpen}
+              >
+                <div className="accordion-inner">
+                  <div className="accordion-content border-t border-stone-200/80 bg-[#fcfbf8] p-4">
+                    <div className="flex flex-wrap gap-2">
+                      {l.words.map(([w, p]) => (
+                        <span
+                          key={w}
+                          className="group inline-flex items-center rounded-lg border border-stone-200/80 bg-white px-3 py-1.5 text-sm font-medium shadow-sm transition-all duration-200 hover:border-[#4a6cf7]/40 hover:shadow hover:-translate-y-0.5"
+                        >
+                          <span className="text-slate-800">{w}</span>
+                          <small className="ml-1.5 text-[10px] font-normal text-slate-400 group-hover:text-slate-500">
+                            {p}
+                          </small>
+                        </span>
+                      ))}
+                    </div>
+                    <button className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#4a6cf7] transition-all duration-150 hover:text-[#3755db] hover:translate-x-0.5 active:scale-95">
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>Print A4 Worksheet (PDF)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </section>
     </main>
   );

@@ -40,3 +40,41 @@ button {
     linear-gradient(90deg, #edf0f5 1px, transparent 1px);
   background-size: 24px 24px;
 }
+
+/* Accordion Collapsible Card Animation */
+.accordion-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows 350ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 350ms step-end;
+  will-change: grid-template-rows, opacity;
+}
+
+.accordion-wrapper.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition: grid-template-rows 350ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s;
+}
+
+.accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.accordion-content {
+  transform: translateY(-8px);
+  opacity: 0.7;
+  transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-wrapper.is-open .accordion-content {
+  transform: translateY(0);
+  opacity: 1;
+}
