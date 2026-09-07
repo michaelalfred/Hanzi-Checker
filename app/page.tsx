@@ -8,10 +8,12 @@ import {
   ChevronDown,
   ChevronLeft,
   CreditCard,
+  Download,
   FileText,
   Flashlight,
   FlashlightOff,
   Home,
+  Loader2,
   Medal,
   RotateCcw,
   Send,
@@ -20,12 +22,20 @@ import {
 } from "lucide-react";
 import type { Grade } from "@/lib/demo";
 type View = "home" | "syllabus" | "camera" | "results";
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKSHEET PDF FILENAMES
+// Replace each `pdfFile` value with the exact filename that exists inside
+// the "syllabus" bucket in your Supabase project.
+// Leave as an empty string ("") to hide the download button for that lesson.
+// ─────────────────────────────────────────────────────────────────────────────
 const lessons = [
   {
     week: 4,
     title: "第十课 – 我们的校园",
     status: "Pending Practice",
     tone: "bg-amber-100 text-amber-700",
+    /** TODO: replace with the real filename in your "syllabus" bucket */
+    pdfFile: "Week4_Lesson10.pdf",
     words: [
       ["校园", "xiàoyuán"],
       ["操场", "cāochǎng"],
@@ -38,6 +48,8 @@ const lessons = [
     title: "第九课 – 我爱我的家",
     status: "Completed (80%)",
     tone: "bg-emerald-100 text-emerald-700",
+    /** TODO: replace with the real filename in your "syllabus" bucket */
+    pdfFile: "Week3_Lesson9.pdf",
     words: [
       ["家", "jiā"],
       ["妈妈", "māma"],
@@ -49,6 +61,8 @@ const lessons = [
     title: "第八课 – 快乐的周末",
     status: "Needs Revision",
     tone: "bg-rose-100 text-rose-700",
+    /** TODO: replace with the real filename in your "syllabus" bucket */
+    pdfFile: "Week2_Lesson8.pdf",
     words: [
       ["周末", "zhōumò"],
       ["公园", "gōngyuán"],
@@ -175,6 +189,39 @@ function Dashboard({ go }: { go: (v: View) => void }) {
 }
 function Syllabus({ go }: { go: (v: View) => void }) {
   const [open, setOpen] = useState(0);
+  // downloadingPdf tracks which week is currently downloading (or null)
+  const [downloadingPdf, setDownloadingPdf] = useState<number | null>(null);
+  const [pdfError, setPdfError] = useState<Record<number, string>>({});
+
+  async function handleDownloadPdf(week: number, pdfFile: string) {
+    if (!pdfFile) return;
+    setDownloadingPdf(week);
+    setPdfError((prev) => ({ ...prev, [week]: "" }));
+    try {
+      const res = await fetch(
+        `/api/worksheet/${encodeURIComponent(pdfFile)}`,
+      );
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Download failed");
+      }
+      // Open signed URL → browser downloads or previews the PDF
+      const a = document.createElement("a");
+      a.href = json.url;
+      a.download = pdfFile;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      setPdfError((prev) => ({
+        ...prev,
+        [week]: err instanceof Error ? err.message : "Download failed",
+      }));
+    } finally {
+      setDownloadingPdf(null);
+    }
+  }
   return (
     <main className="p-5 pb-24">
       <button onClick={() => go("home")}>
@@ -260,10 +307,31 @@ function Syllabus({ go }: { go: (v: View) => void }) {
                         </span>
                       ))}
                     </div>
-                    <button className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#4a6cf7] transition-all duration-150 hover:text-[#3755db] hover:translate-x-0.5 active:scale-95">
-                      <FileText className="h-3.5 w-3.5" />
-                      <span>Print A4 Worksheet (PDF)</span>
-                    </button>
+                    {l.pdfFile && (
+                      <div className="mt-4 flex flex-col gap-1">
+                        <button
+                          onClick={() => handleDownloadPdf(l.week, l.pdfFile)}
+                          disabled={downloadingPdf === l.week}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4a6cf7] transition-all duration-150 hover:text-[#3755db] hover:translate-x-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0"
+                        >
+                          {downloadingPdf === l.week ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Download className="h-3.5 w-3.5" />
+                          )}
+                          <span>
+                            {downloadingPdf === l.week
+                              ? "Preparing download…"
+                              : "Print A4 Worksheet (PDF)"}
+                          </span>
+                        </button>
+                        {pdfError[l.week] && (
+                          <p className="text-[10px] text-red-500">
+                            {pdfError[l.week]}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
