@@ -56,12 +56,8 @@ const lessons = [
     ],
   },
 ];
-const matrix = [
-  ["校园", [1, 1, 0, 0]],
-  ["操场", [1, 1, 1, 1]],
-  ["老师", [0, 1, 1, 1]],
-  ["礼堂", [1, 0, 1, 0]],
-] as const;
+type MatrixRow = { character: string; values: (boolean | null)[] };
+type ResultsMatrix = { demo?: boolean; dates: string[]; rows: MatrixRow[] };
 function Nav({ view, go }: { view: View; go: (v: View) => void }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 mx-auto flex max-w-[440px] justify-around border-t border-stone-200 bg-white px-3 py-3 text-[10px] text-slate-500">
@@ -612,11 +608,42 @@ function Results({
   go: (v: View) => void;
   grade: Grade | null;
 }) {
+  const [matrix, setMatrix] = useState<ResultsMatrix | null>(null);
+  const [matrixLoading, setMatrixLoading] = useState(true);
+  const [matrixError, setMatrixError] = useState("");
+
+  useEffect(() => {
+    setMatrixLoading(true);
+    setMatrixError("");
+    fetch("/api/results-matrix?studentId=lucas-p2")
+      .then((r) => r.json())
+      .then((d: ResultsMatrix & { error?: string }) => {
+        if (d.error) {
+          setMatrixError(d.error);
+        } else {
+          setMatrix(d);
+        }
+      })
+      .catch(() => setMatrixError("Failed to load history"))
+      .finally(() => setMatrixLoading(false));
+  }, [grade]);
+
   if (!grade) {
-    return <main className="p-5 pb-28"><button onClick={() => go("home")}><ChevronLeft /></button><section className="card mt-8 p-7 text-center"><h1 className="text-xl font-bold">No graded worksheet yet</h1><p className="mt-2 text-sm text-slate-500">Scan a worksheet to see its real Gemini feedback here.</p><button onClick={() => go("camera")} className="mt-6 rounded-xl bg-[#4a6cf7] px-5 py-3 text-sm font-bold text-white">Scan a worksheet</button></section></main>;
+    return (
+      <main className="p-5 pb-28">
+        <button onClick={() => go("home")}><ChevronLeft /></button>
+        <section className="card mt-8 p-7 text-center">
+          <h1 className="text-xl font-bold">No graded worksheet yet</h1>
+          <p className="mt-2 text-sm text-slate-500">Scan a worksheet to see its real Gemini feedback here.</p>
+          <button onClick={() => go("camera")} className="mt-6 rounded-xl bg-[#4a6cf7] px-5 py-3 text-sm font-bold text-white">Scan a worksheet</button>
+        </section>
+      </main>
+    );
   }
+
   const g = grade;
   const pct = Math.round((g.totalScore / g.totalPossible) * 100);
+
   return (
     <main className="p-5 pb-28">
       <button onClick={() => go("home")}>
@@ -671,31 +698,50 @@ function Results({
       <section className="mt-6">
         <h2 className="font-bold">Results over time</h2>
         <div className="card mt-3 overflow-hidden">
-          <table className="w-full text-center text-xs">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                <th className="p-3 text-left">Word</th>
-                {["8 Oct", "10 Oct", "12 Oct", "14 Oct"].map((x) => (
-                  <th key={x}>{x}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.map(([word, v]) => (
-                <tr key={word} className="border-t">
-                  <td className="p-3 text-left font-medium">{word}</td>
-                  {v.map((x, i) => (
-                    <td
-                      key={i}
-                      className={x ? "text-emerald-500" : "text-red-500"}
-                    >
-                      {x ? <Check className="mx-auto h-4" /> : "✕"}
-                    </td>
+          {matrixLoading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-400">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-400" />
+              Loading history…
+            </div>
+          ) : matrixError ? (
+            <p className="py-6 text-center text-xs text-red-400">{matrixError}</p>
+          ) : !matrix || matrix.dates.length === 0 ? (
+            <p className="py-6 text-center text-xs text-slate-400">No submission history yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-center text-xs">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="p-3 text-left">Word</th>
+                    {matrix.dates.map((d, i) => (
+                      <th key={i} className="px-2 py-3 whitespace-nowrap">{d}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.rows.map((row) => (
+                    <tr key={row.character} className="border-t">
+                      <td className="p-3 text-left font-medium">{row.character}</td>
+                      {row.values.map((v, i) => (
+                        <td
+                          key={i}
+                          className={
+                            v === null
+                              ? "text-slate-300"
+                              : v
+                              ? "text-emerald-500"
+                              : "text-red-500"
+                          }
+                        >
+                          {v === null ? "–" : v ? <Check className="mx-auto h-4" /> : "✕"}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </section>
       <div className="mt-6 grid grid-cols-2 gap-3">
