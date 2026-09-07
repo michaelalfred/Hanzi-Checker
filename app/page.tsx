@@ -10,6 +10,7 @@ import {
   CreditCard,
   FileText,
   Flashlight,
+  FlashlightOff,
   Home,
   Medal,
   RotateCcw,
@@ -290,19 +291,42 @@ function CameraView({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [torchOn, setTorchOn] = useState(false);
+  const [screenTorch, setScreenTorch] = useState(false);
+  const [torchNotice, setTorchNotice] = useState<string | null>(null);
+  const noticeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showNotice = (msg: string) => {
+    if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
+    setTorchNotice(msg);
+    noticeTimeoutRef.current = setTimeout(() => {
+      setTorchNotice(null);
+    }, 2800);
+  };
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          if (track.kind === "video") {
+            track.applyConstraints({ advanced: [{ torch: false } as any] }).catch(() => {});
+          }
+        } catch {}
+        track.stop();
+      });
       streamRef.current = null;
     }
     if (video.current) {
       video.current.srcObject = null;
     }
+    setTorchOn(false);
+    setScreenTorch(false);
   };
 
   const startCamera = async () => {
     setError("");
+    setTorchOn(false);
+    setScreenTorch(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -318,10 +342,60 @@ function CameraView({
     }
   };
 
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    const nextState = !torchOn;
+
+    if (!track) return;
+
+    let hasHardwareTorch = false;
+    try {
+      if (typeof track.getCapabilities === "function") {
+        const caps = track.getCapabilities() as { torch?: boolean };
+        hasHardwareTorch = Boolean(caps?.torch);
+      }
+    } catch {
+      hasHardwareTorch = false;
+    }
+
+    if (hasHardwareTorch) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: nextState } as any],
+        });
+        setTorchOn(nextState);
+        setScreenTorch(false);
+        return;
+      } catch (err) {
+        console.warn("Hardware torch failed, using screen light fallback:", err);
+      }
+    } else {
+      // Attempt applyConstraints anyway for devices that don't report torch capability in getCapabilities
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: nextState } as any],
+        });
+        setTorchOn(nextState);
+        setScreenTorch(false);
+        return;
+      } catch {
+        // Hardware torch not supported (e.g. iOS Safari)
+      }
+    }
+
+    // Fallback: Screen Illumination Torch
+    setTorchOn(nextState);
+    setScreenTorch(nextState);
+    if (nextState) {
+      showNotice("Screen light on (Hardware flash not supported by browser)");
+    }
+  };
+
   useEffect(() => {
     startCamera();
     return () => {
       stopCamera();
+      if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
     };
   }, []);
 
@@ -425,15 +499,44 @@ function CameraView({
               Captured
             </span>
           ) : (
-            <button className="rounded-full bg-black/40 backdrop-blur-md p-3 text-white">
-              <Flashlight className="h-5 w-5" />
+            <button
+              onClick={toggleTorch}
+              className={`rounded-full p-3 backdrop-blur-md transition-all duration-200 active:scale-90 ${
+                torchOn
+                  ? "bg-amber-400 text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300"
+                  : "bg-black/40 text-white hover:bg-black/60 hover:text-amber-200"
+              }`}
+              aria-label={torchOn ? "Turn flash off" : "Turn flash on"}
+              title={torchOn ? "Turn Flash Off" : "Turn Flash On"}
+            >
+              {torchOn ? (
+                <Flashlight className="h-5 w-5 fill-current" />
+              ) : (
+                <FlashlightOff className="h-5 w-5 opacity-90" />
+              )}
             </button>
           )}
         </div>
 
+        {torchNotice && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 max-w-[85%] rounded-full bg-black/80 backdrop-blur-md px-4 py-2 text-center text-xs font-medium text-amber-200 border border-amber-400/30 shadow-lg pointer-events-none transition-all">
+            {torchNotice}
+          </div>
+        )}
+
         {!capturedImage && (
-          <div className="m-auto w-[82%] aspect-[3/4] rounded-xl border-2 border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]">
-            <div className="flex h-full items-end justify-center pb-5 text-center text-sm font-medium">
+          <div
+            className={`m-auto w-[82%] aspect-[3/4] rounded-xl border-2 transition-all duration-300 ${
+              screenTorch
+                ? "border-amber-300 shadow-[0_0_0_5000px_rgba(255,255,255,0.85)] ring-4 ring-amber-200/50"
+                : "border-white/90 shadow-[0_0_0_5000px_rgba(0,0,0,.22)]"
+            }`}
+          >
+            <div
+              className={`flex h-full items-end justify-center pb-5 text-center text-sm font-medium transition-colors ${
+                screenTorch ? "text-slate-900 font-bold" : "text-white"
+              }`}
+            >
               Keep page flat and inside the brackets
             </div>
           </div>
