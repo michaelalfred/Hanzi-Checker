@@ -12,11 +12,7 @@ Next.js 14 App Router, TypeScript, Tailwind CSS, Supabase (Postgres + Storage), 
 2. Create a public `worksheets` bucket in Supabase, then run `supabase/schema.sql` in its SQL editor.
 3. Run `npm install` and `npm run dev`.
 
-Without environment variables, the app deliberately stays demoable: uploads and grading use a safe mocked fallback, while the UI still follows the full capture → upload → grade → result pipeline. With configured keys, images are stored in Supabase and Gemini is used for image grading (with the same fallback if its response is unavailable).
-
-## Deployment
-
-Deploy to Vercel and set the four environment variables from `.env.example`. Add the Vercel URL here before submitting the assignment.
+With configured keys, images are stored in Supabase and Gemini is used for image grading (with the same fallback if its response is unavailable).
 
 ## Implementation notes
 
