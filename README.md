@@ -18,3 +18,6 @@ With configured keys, images are stored in Supabase and Gemini is used for image
 
 - The correction layer is deliberately approximate; it places readable red-pen correction labels over the captured worksheet rather than attempting fragile handwriting coordinates.
 - Static dashboard metrics, payment, sharing, printing, and several nav destinations are presentation stubs, as allowed by the brief.
+
+## Deployment URL
+https://efwgvfwrdvsw.vercel.app/
